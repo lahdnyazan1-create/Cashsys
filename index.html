@@ -347,462 +347,252 @@
 
     <!-- Firebase و JavaScript Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  // 1. استدعاء مكتبات فايربيس
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // إعدادات بيئة العمل
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pos-wholesale-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // سيتم توفيرها من خلال بيئة الاستضافة
-        };
+  // 2. إعدادات الربط بقاعدة بيانات فايربيس (استبدل القيم ببيانات مشروعك)
+  const firebaseConfig = {
+    apiKey: "ضع_apiKey_هنا",
+    authDomain: "ضع_authDomain_هنا",
+    projectId: "ضع_projectId_هنا",
+    storageBucket: "ضع_storageBucket_هنا",
+    messagingSenderId: "ضع_messagingSenderId_هنا",
+    appId: "ضع_appId_هنا"
+  };
 
-        let app, db, auth, currentUserId;
-        let isDbReady = false;
+  // 3. تهيئة التطبيق وقاعدة البيانات
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const invoicesCollection = collection(db, 'invoices');
+
+  // متغيرات النظام الأساسية
+  let cart = []; // سلة المشتريات الحالية
+  let currentMerchantDebt = 0; // الرصيد السابق (الدين) للتاجر المحدد
+
+  // تعريف عناصر الواجهة (تأكد من مطابقة هذه الـ IDs مع عناصر HTML لديك)
+  const merchantSelect = document.getElementById('merchantSelect');
+  const cartBody = document.getElementById('cartBody');
+  const previousDebtDisplay = document.getElementById('previousDebtDisplay');
+  const cartTotalDisplay = document.getElementById('cartTotalDisplay');
+  const grandTotalDisplay = document.getElementById('grandTotalDisplay');
+  const paidInput = document.getElementById('paidInput');
+  const remainingDisplay = document.getElementById('remainingDisplay');
+  
+  // 4. دالة لجلب وحساب ديون التاجر السابقة بمجرد اختياره
+  async function fetchMerchantDebt(merchantName) {
+    if (!merchantName) {
+      currentMerchantDebt = 0;
+      updateCalculations();
+      return;
+    }
+
+    try {
+      // البحث عن جميع فواتير التاجر المحددة
+      const q = query(invoicesCollection, where("merchant", "==", merchantName));
+      const querySnapshot = await getDocs(q);
+      
+      let totalPurchases = 0; // إجمالي ما اشتراه التاجر تاريخياً
+      let totalPaid = 0;      // إجمالي ما دفعه التاجر تاريخياً
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        totalPurchases += data.cartTotal || 0;
+        totalPaid += data.paidAmount || 0;
+      });
+
+      // الرصيد المطلوب = كل المشتريات السابقة ناقص كل الدفعات السابقة
+      currentMerchantDebt = totalPurchases - totalPaid;
+      
+      updateCalculations();
+    } catch (error) {
+      console.error("خطأ في جلب بيانات التاجر: ", error);
+      alert("تعذر جلب رصيد التاجر السابق. تأكد من الاتصال بالإنترنت.");
+    }
+  }
+
+  // الاستماع لتغيير اسم التاجر من القائمة المنسدلة لجلب حسابه
+  merchantSelect.addEventListener('change', (e) => {
+    fetchMerchantDebt(e.target.value);
+  });
+
+  // 5. دالة تحديث الحسابات على الشاشة لحظياً
+  function updateCalculations() {
+    // حساب مجموع الفاتورة الحالية
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // إجمالي المطلوب = الفاتورة الحالية + الديون السابقة
+    const grandTotal = cartTotal + currentMerchantDebt;
+    
+    // المبلغ المدفوع الآن
+    const paidAmount = parseFloat(paidInput.value) || 0;
+    
+    // الرصيد المتبقي الجديد (الذمة الجديدة التي ستسجل عليه)
+    const newRemaining = grandTotal - paidAmount;
+
+    // عرض القيم في الواجهة
+    if(previousDebtDisplay) previousDebtDisplay.innerText = currentMerchantDebt.toFixed(2);
+    if(cartTotalDisplay) cartTotalDisplay.innerText = cartTotal.toFixed(2);
+    if(grandTotalDisplay) grandTotalDisplay.innerText = grandTotal.toFixed(2);
+    if(remainingDisplay) remainingDisplay.innerText = newRemaining.toFixed(2);
+  }
+
+  // تحديث الحسابات عند كتابة أي رقم في خانة "المدفوع"
+  paidInput.addEventListener('input', updateCalculations);
+
+  // 6. دالة حفظ الفاتورة وطباعتها
+  document.getElementById('savePrintBtn').addEventListener('click', async () => {
+    const merchantName = merchantSelect.value;
+    const paidAmount = parseFloat(paidInput.value) || 0;
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const grandTotal = cartTotal + currentMerchantDebt;
+    const newRemaining = grandTotal - paidAmount;
+
+    if (!merchantName) {
+      alert("الرجاء اختيار تاجر أولاً.");
+      return;
+    }
+    if (cart.length === 0) {
+      alert("الفاتورة فارغة، الرجاء إضافة منتجات.");
+      return;
+    }
+
+    try {
+      // بناء كائن الفاتورة
+      const invoiceData = {
+        merchant: merchantName,
+        items: cart,
+        cartTotal: cartTotal,           // قيمة بضاعة اليوم فقط
+        previousDebt: currentMerchantDebt, // الرصيد السابق
+        grandTotal: grandTotal,         // الإجمالي المطلوب
+        paidAmount: paidAmount,         // ما تم دفعه الآن
+        newRemaining: newRemaining,     // الرصيد المتبقي عليه بعد هذه الفاتورة
+        date: Timestamp.now()           // تاريخ ووقت الفاتورة
+      };
+
+      // الحفظ في قاعدة البيانات
+      await addDoc(invoicesCollection, invoiceData);
+      
+      // فتح نافذة الطباعة للفاتورة
+      window.print();
+
+      // تصفير الواجهة للبدء بفاتورة جديدة
+      cart = [];
+      renderCart(); // تأكد من وجود دالة renderCart لإنشاء جدول المنتجات
+      paidInput.value = '';
+      
+      // تحديث ديون التاجر مباشرة لتعكس الفاتورة التي تم حفظها للتو
+      fetchMerchantDebt(merchantName);
+      
+      alert("تم حفظ الفاتورة بنجاح!");
+      
+    } catch (error) {
+      console.error("خطأ في حفظ الفاتورة: ", error);
+      alert("حدث خطأ أثناء حفظ الفاتورة.");
+    }
+  });
+
+  // 7. دالة توليد تقرير بين تاريخين
+  document.getElementById('generateReportBtn').addEventListener('click', async () => {
+    const startDateVal = document.getElementById('startDate').value;
+    const endDateVal = document.getElementById('endDate').value;
+    const reportTableBody = document.getElementById('reportTableBody'); // مكان عرض التقرير
+
+    if (!startDateVal || !endDateVal) {
+      alert("الرجاء تحديد تاريخ البداية والنهاية.");
+      return;
+    }
+
+    // تحويل التواريخ إلى Timestamp لتوافق فايربيس
+    const start = Timestamp.fromDate(new Date(startDateVal + "T00:00:00"));
+    const end = Timestamp.fromDate(new Date(endDateVal + "T23:59:59"));
+
+    try {
+      const q = query(invoicesCollection, where("date", ">=", start), where("date", "<=", end), orderBy("date", "asc"));
+      const snapshot = await getDocs(q);
+      
+      reportTableBody.innerHTML = '';
+      let totalSales = 0;
+      let totalCollections = 0;
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const dateStr = data.date.toDate().toLocaleDateString('ar-EG');
         
-        let allInvoices = []; // تخزين الفواتير في الذاكرة لحساب الأرصدة
-        let unsubscribeInvoices = null;
+        totalSales += data.cartTotal;
+        totalCollections += data.paidAmount;
 
-        // تهيئة قاعدة البيانات إذا تم توفير الإعدادات
-        if (Object.keys(firebaseConfig).length > 0) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        const row = `
+          <tr>
+            <td>${dateStr}</td>
+            <td>${data.merchant}</td>
+            <td>${data.cartTotal.toFixed(2)}</td>
+            <td>${data.paidAmount.toFixed(2)}</td>
+            <td>${data.newRemaining.toFixed(2)}</td>
+          </tr>
+        `;
+        reportTableBody.innerHTML += row;
+      });
 
-            // عملية تسجيل الدخول (صلاحيات المستخدم لحفظ بياناته)
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-            if (initialAuthToken) {
-                signInWithCustomToken(auth, initialAuthToken).catch(e => console.error(e));
-            } else {
-                signInAnonymously(auth).catch(e => console.error(e));
-            }
+      // إضافة صف المجاميع في نهاية التقرير
+      reportTableBody.innerHTML += `
+        <tr style="font-weight: bold; background-color: #f1f1f1;">
+          <td colspan="2">الإجمالي للفترة</td>
+          <td>${totalSales.toFixed(2)}</td>
+          <td>${totalCollections.toFixed(2)}</td>
+          <td>-</td>
+        </tr>
+      `;
+      
+    } catch (error) {
+      console.error("خطأ في توليد التقرير: ", error);
+      alert("حدث خطأ أثناء جلب التقرير.");
+    }
+  });
 
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    isDbReady = true;
-                    console.log("Database initialized. Ready to save/load.");
-                    
-                    // الاستماع للتغيرات في الفواتير لتحديث الأرصدة لحظياً
-                    const invoiceRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'invoices');
-                    unsubscribeInvoices = onSnapshot(invoiceRef, (snapshot) => {
-                        allInvoices = [];
-                        snapshot.forEach(doc => {
-                            allInvoices.push({ id: doc.id, ...doc.data() });
-                        });
-                        updateMerchantBalanceDisplay(); // تحديث شاشة البيع
-                        if(!document.getElementById('view-reports').classList.contains('hidden')) {
-                            generateReport(); // تحديث شاشة التقارير إذا كانت مفتوحة
-                        }
-                    }, (error) => {
-                        console.error("Error fetching invoices snapshot:", error);
-                    });
+  // دوال مساعدة لإدارة السلة (كمثال)
+  window.addToCart = function(name, price) {
+    const existing = cart.find(item => item.name === name);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ name, price, quantity: 1 });
+    }
+    renderCart();
+    updateCalculations();
+  };
 
-                    // تعيين تواريخ التقرير الافتراضية
-                    setDefaultDates();
-                } else {
-                    currentUserId = null;
-                    isDbReady = false;
-                    if(unsubscribeInvoices) unsubscribeInvoices();
-                    allInvoices = [];
-                }
-            });
-        }
+  function renderCart() {
+    if (!cartBody) return;
+    cartBody.innerHTML = '';
+    cart.forEach((item, index) => {
+      cartBody.innerHTML += `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.price}</td>
+          <td>
+            <input type="number" value="${item.quantity}" min="1" 
+                   onchange="updateQty(${index}, this.value)">
+          </td>
+          <td>${(item.price * item.quantity).toFixed(2)}</td>
+          <td><button onclick="removeFromCart(${index})">حذف</button></td>
+        </tr>
+      `;
+    });
+  }
 
-        // ==========================================
-        // متغيرات التطبيق
-        // ==========================================
-        let cart = [];
-        let invoiceTotal = 0;
+  window.updateQty = function(index, qty) {
+    cart[index].quantity = parseInt(qty);
+    renderCart();
+    updateCalculations();
+  };
 
-        // ==========================================
-        // وظائف الواجهة (UI Functions)
-        // ==========================================
-        
-        window.switchTab = function(tab) {
-            document.getElementById('view-pos').classList.add('hidden');
-            document.getElementById('view-reports').classList.add('hidden');
-            
-            document.getElementById('tab-pos').className = "px-4 py-2 rounded hover:bg-blue-700 transition font-semibold";
-            document.getElementById('tab-reports').className = "px-4 py-2 rounded hover:bg-blue-700 transition font-semibold";
+  window.removeFromCart = function(index) {
+    cart.splice(index, 1);
+    renderCart();
+    updateCalculations();
+  };
 
-            if (tab === 'pos') {
-                document.getElementById('view-pos').classList.remove('hidden');
-                document.getElementById('tab-pos').classList.add('bg-blue-900');
-            } else {
-                document.getElementById('view-reports').classList.remove('hidden');
-                document.getElementById('tab-reports').classList.add('bg-blue-900');
-                if(isDbReady) {
-                    generateReport(); // استدعاء التقرير الافتراضي
-                }
-            }
-        }
-
-        document.getElementById('merchant-select').addEventListener('change', (e) => {
-            document.getElementById('current-merchant-display').textContent = e.target.value;
-            updateMerchantBalanceDisplay();
-        });
-
-        window.showAlert = function(msg) {
-            const box = document.getElementById('alert-box');
-            document.getElementById('alert-message').textContent = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
-        }
-
-        window.showSuccess = function(msg) {
-            const box = document.getElementById('success-box');
-            document.getElementById('success-message').textContent = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
-        }
-
-        // ==========================================
-        // وظائف سلة المشتريات (نقطة البيع)
-        // ==========================================
-        
-        window.addItem = function() {
-            const nameInput = document.getElementById('item-name');
-            const qtyInput = document.getElementById('item-qty');
-            const priceInput = document.getElementById('item-price');
-
-            const name = nameInput.value.trim();
-            const qty = parseFloat(qtyInput.value);
-            const price = parseFloat(priceInput.value);
-
-            if (!name) {
-                showAlert('الرجاء إدخال اسم الصنف');
-                return;
-            }
-            if (isNaN(qty) || qty <= 0) {
-                showAlert('الكمية يجب أن تكون أكبر من صفر');
-                return;
-            }
-            if (isNaN(price) || price < 0) {
-                showAlert('السعر غير صالح');
-                return;
-            }
-
-            cart.push({
-                id: Date.now().toString(),
-                name: name,
-                qty: qty,
-                price: price,
-                total: qty * price
-            });
-
-            // تفريغ الحقول بعد الإضافة
-            nameInput.value = '';
-            qtyInput.value = '1';
-            priceInput.value = '';
-            nameInput.focus();
-
-            updateCartUI();
-        }
-
-        window.removeItem = function(id) {
-            cart = cart.filter(item => item.id !== id);
-            updateCartUI();
-        }
-
-        // جلب رصيد التاجر من الذاكرة
-        window.getPreviousBalance = function(merchantName) {
-            let balance = 0;
-            allInvoices.forEach(inv => {
-                if (inv.merchant === merchantName) {
-                    // نجمع الديون المتولدة من كل فاتورة (المتبقي من كل فاتورة على حدة)
-                    balance += (parseFloat(inv.remaining) || 0);
-                }
-            });
-            return balance;
-        }
-
-        // تحديث عرض الرصيد في الشاشة
-        window.updateMerchantBalanceDisplay = function() {
-            const merchantName = document.getElementById('merchant-select').value;
-            const prevBalance = getPreviousBalance(merchantName);
-            
-            document.getElementById('merchant-previous-balance').textContent = prevBalance.toFixed(2) + ' ₪';
-            document.getElementById('calc-prev-balance').textContent = prevBalance.toFixed(2) + ' ₪';
-            
-            calculateTotals();
-        }
-
-        window.updateCartUI = function() {
-            const tbody = document.getElementById('cart-items');
-            tbody.innerHTML = '';
-            invoiceTotal = 0;
-
-            if (cart.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">لا يوجد منتجات في الفاتورة</td></tr>';
-                document.getElementById('btn-save-print').disabled = true;
-            } else {
-                cart.forEach((item) => {
-                    invoiceTotal += item.total;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="p-2 border-b">${item.name}</td>
-                        <td class="p-2 border-b">${item.qty}</td>
-                        <td class="p-2 border-b">${item.price.toFixed(2)}</td>
-                        <td class="p-2 border-b font-bold">${item.total.toFixed(2)}</td>
-                        <td class="p-2 border-b text-center">
-                            <button onclick="removeItem('${item.id}')" class="text-red-500 hover:text-red-700 font-bold bg-red-50 rounded px-2 py-1">X</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                document.getElementById('btn-save-print').disabled = false;
-            }
-
-            document.getElementById('cart-total').textContent = invoiceTotal.toFixed(2) + ' ₪';
-            calculateTotals();
-        }
-
-        window.calculateTotals = function() {
-            const merchantName = document.getElementById('merchant-select').value;
-            const prevBalance = getPreviousBalance(merchantName);
-            const totalRequired = prevBalance + invoiceTotal;
-
-            document.getElementById('calc-total-required').textContent = totalRequired.toFixed(2);
-
-            let paidInput = document.getElementById('amount-paid').value;
-            let paid = parseFloat(paidInput);
-            if (isNaN(paid) || paidInput.trim() === '') paid = 0;
-            
-            // الرصيد المتبقي الكلي (الذمة الجديدة)
-            const finalBalance = totalRequired - paid;
-            const remainingEl = document.getElementById('amount-remaining');
-            
-            remainingEl.value = finalBalance.toFixed(2);
-            
-            if (finalBalance > 0) {
-                remainingEl.className = "w-full border-2 border-red-200 bg-red-50 rounded p-2 text-lg font-bold text-red-600 outline-none";
-            } else if (finalBalance < 0) {
-        window.clearCart = function() {
-            cart = [];
-            document.getElementById('amount-paid').value = '0';
-            updateCartUI();
-        }
-
-        // ==========================================
-        // وظائف الحفظ والطباعة (الفاتورة)
-        // ==========================================
-        
-        window.saveAndPrint = async function() {
-            if (cart.length === 0) return;
-            
-            const merchantName = document.getElementById('merchant-select').value;
-            const prevBalance = getPreviousBalance(merchantName);
-            
-            let paidInput = document.getElementById('amount-paid').value;
-            let paid = parseFloat(paidInput) || 0;
-            
-            // الدين الخاص بهذه الفاتورة فقط (سيتم جمعه لاحقاً لمعرفة الرصيد الكلي)
-            let invoiceDebt = invoiceTotal - paid; 
-            
-            // الرصيد الكلي المطلوب من التاجر بعد هذه الفاتورة
-            let totalRequired = prevBalance + invoiceTotal;
-            let finalBalance = totalRequired - paid;
-            
-            let dateNow = new Date();
-
-            const invoiceData = {
-                merchant: merchantName,
-                items: cart,
-                total: invoiceTotal, // قيمة المشتريات
-                paid: paid, // المبلغ المدفوع
-                remaining: invoiceDebt, // التغير في الدين (قد يكون سالب إذا دفع أكثر من قيمة الفاتورة)
-                prevBalance: prevBalance, // للتسجيل التاريخي
-                finalBalance: finalBalance, // للتسجيل التاريخي
-                dateStr: dateNow.toISOString().split('T')[0], // YYYY-MM-DD
-                timestamp: dateNow.toISOString(),
-                displayDate: dateNow.toLocaleString('ar-EG')
-            };
-
-            // 1. تجهيز قالب الطباعة الحرارية
-            document.getElementById('print-date').textContent = invoiceData.displayDate;
-            document.getElementById('print-merchant').textContent = merchantName;
-            
-            const printItemsTbody = document.getElementById('print-items');
-            printItemsTbody.innerHTML = '';
-            cart.forEach(item => {
-                printItemsTbody.innerHTML += `
-                    <tr>
-                        <td style="text-align:right;">${item.name}</td>
-                        <td style="text-align:center;">${item.qty}</td>
-                        <td style="text-align:left;">${item.total.toFixed(2)}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('print-prev-balance').textContent = prevBalance.toFixed(2);
-            document.getElementById('print-total').textContent = invoiceTotal.toFixed(2);
-            document.getElementById('print-total-required').textContent = totalRequired.toFixed(2);
-            document.getElementById('print-paid').textContent = paid.toFixed(2);
-            document.getElementById('print-final-balance').textContent = finalBalance.toFixed(2);
-
-            // 2. حفظ في قاعدة البيانات (Firebase)
-            if (isDbReady && currentUserId) {
-                try {
-                    const invoiceRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'invoices');
-                    await addDoc(invoiceRef, invoiceData);
-                    showSuccess('تم حفظ الفاتورة بنجاح');
-                } catch (e) {
-                    console.error("Error saving doc: ", e);
-                    showAlert('حدث خطأ أثناء حفظ الفاتورة');
-                    return; // إيقاف العملية إذا فشل الحفظ
-                }
-            } else {
-                 showSuccess('محاكاة الحفظ: تم طباعة الفاتورة (بدون قاعدة بيانات)');
-            }
-
-            // 3. أمر الطباعة الفعلي
-            document.body.classList.add('printing-receipt');
-            window.print();
-            
-            // تنظيف بعد الطباعة
-            setTimeout(() => {
-                document.body.classList.remove('printing-receipt');
-                clearCart(); // تفريغ بعد الطباعة بنجاح
-            }, 500);
-        }
-
-        // ==========================================
-        // التقارير (Reports)
-        // ==========================================
-        
-        function setDefaultDates() {
-            const today = new Date();
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            
-            document.getElementById('filter-start-date').value = startOfMonth.toISOString().split('T')[0];
-            document.getElementById('filter-end-date').value = today.toISOString().split('T')[0];
-        }
-
-        window.generateReport = async function() {
-            if (!isDbReady || !currentUserId) {
-                showAlert("قاعدة البيانات غير متصلة");
-                return;
-            }
-
-            const startDate = document.getElementById('filter-start-date').value;
-            const endDate = document.getElementById('filter-end-date').value;
-            const merchantFilter = document.getElementById('filter-merchant').value;
-            
-            // عرض أرصدة التجار الحالية
-            renderMerchantBalances();
-
-            const tbody = document.getElementById('report-table-body');
-            const tfoot = document.getElementById('report-table-foot');
-            
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-500">جاري تحميل البيانات...</td></tr>';
-            tfoot.classList.add('hidden');
-            document.getElementById('btn-print-report').classList.add('hidden');
-
-            // نستخدم البيانات المحملة مسبقاً في الذاكرة بدلاً من جلبها مرة أخرى
-            let results = [];
-            let sumTotal = 0, sumPaid = 0, sumRemaining = 0;
-
-            allInvoices.forEach((data) => {
-                // فلترة يدوية
-                    let matchesDate = true;
-                    let matchesMerchant = true;
-
-                    if (startDate && data.dateStr < startDate) matchesDate = false;
-                    if (endDate && data.dateStr > endDate) matchesDate = false;
-                    if (merchantFilter !== 'all' && data.merchant !== merchantFilter) matchesMerchant = false;
-
-                    if (matchesDate && matchesMerchant) {
-                        results.push(data);
-                        sumTotal += (data.total || 0);
-                        sumPaid += (data.paid || 0);
-                        sumRemaining += (data.remaining || 0);
-                    }
-            });
-
-            // ترتيب النتائج حسب التاريخ الأحدث أولاً
-                results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-                // عرض البيانات
-                tbody.innerHTML = '';
-                if (results.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-500">لا يوجد فواتير مطابقة لخيارات البحث</td></tr>';
-                } else {
-                    results.forEach(res => {
-                        const tr = document.createElement('tr');
-                        // نستخدم res.total لقيمة الفاتورة، و res.finalBalance للمتبقي الكلي في ذلك الوقت
-                        tr.innerHTML = `
-                            <td class="p-3 border-b text-sm">${res.displayDate}</td>
-                            <td class="p-3 border-b font-semibold text-gray-700">${res.merchant}</td>
-                            <td class="p-3 border-b text-blue-700 font-bold">${res.total.toFixed(2)}</td>
-                            <td class="p-3 border-b text-green-700">${res.paid.toFixed(2)}</td>
-                            <td class="p-3 border-b text-red-600 font-bold">${(res.finalBalance !== undefined ? res.finalBalance : res.remaining).toFixed(2)}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                    
-                    // تحديث المجاميع وإظهار الفوتر وزر الطباعة
-                    document.getElementById('rep-total-sum').textContent = sumTotal.toFixed(2) + ' ₪';
-                    document.getElementById('rep-paid-sum').textContent = sumPaid.toFixed(2) + ' ₪';
-                    document.getElementById('rep-rem-sum').textContent = sumRemaining.toFixed(2) + ' ₪';
-                    
-                    tfoot.classList.remove('hidden');
-                    document.getElementById('btn-print-report').classList.remove('hidden');
-                }
-        }
-
-        // دالة لعرض الأرصدة الكلية للتجار في قسم التقارير
-        function renderMerchantBalances() {
-            const grid = document.getElementById('merchant-balances-grid');
-            grid.innerHTML = '';
-            
-            const merchants = [
-                "التاجر 1 (أحمد)", 
-                "التاجر 2 (محمد)", 
-                "التاجر 3 (خالد)", 
-                "التاجر 4 (عمر)"
-            ];
-
-            merchants.forEach(merchant => {
-                const balance = getPreviousBalance(merchant);
-                const colorClass = balance > 0 ? 'text-red-600' : (balance < 0 ? 'text-green-600' : 'text-gray-600');
-                
-                grid.innerHTML += `
-                    <div class="border rounded p-4 flex flex-col items-center bg-gray-50">
-                        <span class="font-bold text-gray-700 mb-2">${merchant}</span>
-                        <span class="text-xl font-bold ${colorClass}">${balance.toFixed(2)} ₪</span>
-                    </div>
-                `;
-            });
-        }
-
-        window.printReport = function() {
-            // تجهيز قالب طباعة التقرير A4
-            const startDate = document.getElementById('filter-start-date').value;
-            const endDate = document.getElementById('filter-end-date').value;
-            const merchantFilter = document.getElementById('filter-merchant').value;
-            
-            let dateText = `الفترة: ${startDate || 'البداية'} إلى ${endDate || 'اليوم'}`;
-            if(merchantFilter !== 'all') dateText += ` | التاجر: ${merchantFilter}`;
-            document.getElementById('print-report-date-range').textContent = dateText;
-
-            // نسخ محتوى الجدول للطباعة
-            const srcBody = document.getElementById('report-table-body').innerHTML;
-            document.getElementById('print-report-body').innerHTML = srcBody;
-            
-            document.getElementById('print-rep-total').textContent = document.getElementById('rep-total-sum').textContent;
-            document.getElementById('print-rep-paid').textContent = document.getElementById('rep-paid-sum').textContent;
-            document.getElementById('print-rep-rem').textContent = document.getElementById('rep-rem-sum').textContent;
-
-            // أمر الطباعة
-            document.body.classList.add('printing-report');
-            window.print();
-            
-            setTimeout(() => {
-                document.body.classList.remove('printing-report');
-            }, 500);
-        }
-
-    </script>
+</script>
 </body>
 </html>
