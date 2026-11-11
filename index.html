@@ -70,7 +70,7 @@
 
         <div class="form-group">
             <label for="itemName">اسم الصنف:</label>
-            <input type="text" id="itemName" placeholder="مثال: نين">
+            <input type="text" id="itemName" placeholder="مثال: قشطوطة">
         </div>
 
         <div class="row">
@@ -135,7 +135,7 @@
 <!-- منطقة الطباعة الحرارية -->
 <div id="printArea">
     <div class="print-header">
-        <h2 style="margin:0;">مؤسسة التجارة</h2>
+        <h2 style="margin:0;">بلبن سعير </h2>
         <p style="margin:5px 0;">فاتورة مبيعات جملة</p>
         <p style="margin:0;" id="printDate"></p>
         <p style="margin:5px 0; font-weight:bold;">التاجر: <span id="printMerchant"></span></p>
@@ -173,7 +173,7 @@
     const db = initializeFirestore(app, { experimentalForceLongPolling: true }, "default");
     const invoicesCollection = collection(db, 'invoices');
 
-    const MERCHANTS = ["التاجر 1 (أحمد)", "التاجر 2 (محمد)", "التاجر 3 (محمود)"];
+    const MERCHANTS = ["بيت فجار", "ام سلمونة", "التاجر 3 (محمود)"];
     const SAVE_TIMEOUT_MS = 15000;
 
     let cart = [];
