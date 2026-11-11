@@ -6,97 +6,32 @@
     <title>نظام الكاشير والمبيعات</title>
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #34495e;
-            --accent: #3498db;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --light: #ecf0f1;
+            --primary: #2c3e50; --secondary: #34495e; --accent: #3498db;
+            --success: #2ecc71; --danger: #e74c3c; --light: #ecf0f1;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: var(--light);
-            color: var(--primary);
-        }
-        .container {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .panel {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: var(--light); color: var(--primary); }
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h2, h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--light); padding-bottom: 10px; }
-        
-        /* أزرار المنتجات */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .product-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 15px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .product-btn { background: var(--accent); color: white; border: none; padding: 15px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
         .product-btn:hover { background: #2980b9; transform: translateY(-2px); }
-
-        /* الجداول */
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { padding: 10px; text-align: right; border-bottom: 1px solid #ddd; }
         th { background: var(--primary); color: white; }
-        input[type="number"], input[type="date"], select {
-            padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box;
-        }
-        
-        /* الحسابات والأزرار */
-        .totals-box {
-            background: var(--light); padding: 15px; border-radius: 6px; margin-bottom: 15px;
-        }
-        .totals-row {
-            display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 16px;
-        }
-        .text-danger { color: var(--danger); }
-        .text-success { color: var(--success); }
-        
-        .action-btn {
-            width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold;
-            cursor: pointer; margin-bottom: 10px; color: white;
-        }
-        .btn-save { background: var(--success); }
-        .btn-save:hover { background: #27ae60; }
+        input[type="number"], input[type="date"], select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        .totals-box { background: var(--light); padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .totals-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 16px; }
+        .text-danger { color: var(--danger); } .text-success { color: var(--success); }
+        .action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; color: white; }
+        .btn-save { background: var(--success); } .btn-save:hover { background: #27ae60; }
         .btn-report { background: var(--secondary); }
 
-        /* منطقة الطباعة لطابعة الفواتير (عرض 80mm، عرض الطباعة 72mm) */
         #printArea { display: none; }
-        
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
-            #printArea {
-                display: block;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 72mm; /* متوافق مع إعدادات الطابعة في الصورة */
-                font-family: monospace;
-                font-size: 12px;
-                color: black;
-            }
+            #printArea { display: block; position: absolute; left: 0; top: 0; width: 72mm; font-family: monospace; font-size: 12px; color: black; }
             .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
             .print-table th, .print-table td { border: 1px dashed #000; padding: 4px; text-align: center; }
             .print-header { text-align: center; margin-bottom: 10px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
@@ -106,35 +41,24 @@
 <body>
 
 <div class="container" id="mainApp">
-    <!-- قسم المبيعات والمنتجات -->
     <div class="panel">
         <h2>المنتجات (انقر للإضافة)</h2>
         <div class="products-grid">
-            <!-- يمكنك تغيير أسماء وأسعار المنتجات من هنا -->
-            <button class="product-btn" onclick="addToCart('منتج أ', 15)">منتج أ - 15₪</button>
-            <button class="product-btn" onclick="addToCart('منتج ب', 25)">منتج ب - 25₪</button>
-            <button class="product-btn" onclick="addToCart('منتج ج', 10)">منتج ج - 10₪</button>
-            <button class="product-btn" onclick="addToCart('منتج د', 50)">منتج د - 50₪</button>
+            <button class="product-btn" data-name="منتج أ" data-price="15">منتج أ - 15₪</button>
+            <button class="product-btn" data-name="منتج ب" data-price="25">منتج ب - 25₪</button>
+            <button class="product-btn" data-name="منتج ج" data-price="10">منتج ج - 10₪</button>
+            <button class="product-btn" data-name="منتج د" data-price="50">منتج د - 50₪</button>
         </div>
 
         <h3>الفاتورة الحالية</h3>
         <table>
             <thead>
-                <tr>
-                    <th>الصنف</th>
-                    <th>السعر</th>
-                    <th>الكمية</th>
-                    <th>المجموع</th>
-                    <th>إجراء</th>
-                </tr>
+                <tr><th>الصنف</th><th>السعر</th><th>الكمية</th><th>المجموع</th><th>إجراء</th></tr>
             </thead>
-            <tbody id="cartBody">
-                <!-- المنتجات تضاف هنا -->
-            </tbody>
+            <tbody id="cartBody"></tbody>
         </table>
     </div>
 
-    <!-- قسم الحسابات والعميل -->
     <div class="panel">
         <h2>تفاصيل الحساب</h2>
         <select id="merchantSelect" style="margin-bottom: 15px; font-size: 16px;">
@@ -146,36 +70,17 @@
         </select>
 
         <div class="totals-box">
-            <div class="totals-row text-danger">
-                <span>الرصيد السابق (دين):</span>
-                <span id="previousDebtDisplay">0.00</span>
-            </div>
-            <div class="totals-row">
-                <span>قيمة بضاعة اليوم:</span>
-                <span id="cartTotalDisplay">0.00</span>
-            </div>
+            <div class="totals-row text-danger"><span>الرصيد السابق (دين):</span><span id="previousDebtDisplay">0.00</span></div>
+            <div class="totals-row"><span>قيمة بضاعة اليوم:</span><span id="cartTotalDisplay">0.00</span></div>
             <hr>
-            <div class="totals-row">
-                <span>الإجمالي المطلوب:</span>
-                <span id="grandTotalDisplay">0.00</span>
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <label>الدفعة المحصلة (شيكل):</label>
-                <input type="number" id="paidInput" placeholder="أدخل المبلغ المدفوع" min="0">
-            </div>
-
+            <div class="totals-row"><span>الإجمالي المطلوب:</span><span id="grandTotalDisplay">0.00</span></div>
+            <div style="margin-top: 15px;"><label>الدفعة المحصلة (شيكل):</label><input type="number" id="paidInput" placeholder="أدخل المبلغ المدفوع" min="0"></div>
             <hr>
-            <div class="totals-row text-success" style="margin-top: 10px;">
-                <span>الرصيد المتبقي عليه:</span>
-                <span id="remainingDisplay">0.00</span>
-            </div>
+            <div class="totals-row text-success" style="margin-top: 10px;"><span>الرصيد المتبقي عليه:</span><span id="remainingDisplay">0.00</span></div>
         </div>
-
         <button class="action-btn btn-save" id="savePrintBtn">حفظ وطباعة الفاتورة</button>
     </div>
 
-    <!-- قسم التقارير (أسفل الشاشة) -->
     <div class="panel" style="grid-column: 1 / -1;">
         <h2>تقارير المبيعات</h2>
         <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
@@ -185,21 +90,13 @@
             <button class="action-btn btn-report" onclick="window.print()" style="width: 150px; margin-bottom: 0;">طباعة التقرير</button>
         </div>
         <table>
-            <thead>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>التاجر</th>
-                    <th>قيمة البضاعة</th>
-                    <th>الدفعة المحصلة</th>
-                    <th>الرصيد المتبقي</th>
-                </tr>
-            </thead>
+            <thead><tr><th>التاريخ</th><th>التاجر</th><th>قيمة البضاعة</th><th>الدفعة المحصلة</th><th>الرصيد المتبقي</th></tr></thead>
             <tbody id="reportTableBody"></tbody>
         </table>
     </div>
 </div>
 
-<!-- المنطقة المخصصة للطباعة فقط -->
+<!-- المنطقة المخصصة للطباعة -->
 <div id="printArea">
     <div class="print-header">
         <h2 style="margin:0;">مؤسسة التجارة</h2>
@@ -207,18 +104,10 @@
         <p style="margin:0;" id="printDate"></p>
         <p style="margin:5px 0; font-weight:bold;">التاجر: <span id="printMerchant"></span></p>
     </div>
-    
     <table class="print-table">
-        <thead>
-            <tr>
-                <th>الصنف</th>
-                <th>الكمية</th>
-                <th>المجموع</th>
-            </tr>
-        </thead>
+        <thead><tr><th>الصنف</th><th>الكمية</th><th>المجموع</th></tr></thead>
         <tbody id="printCartBody"></tbody>
     </table>
-
     <div style="margin-top: 15px; border-top: 2px dashed #000; padding-top: 10px;">
         <p>الرصيد السابق: <span id="printPrevDebt">0.00</span></p>
         <p>فاتورة اليوم: <span id="printCartTotal">0.00</span></p>
@@ -226,44 +115,39 @@
         <p>الدفعة المستلمة: <span id="printPaid">0.00</span></p>
         <p style="font-size: 14px;"><strong>الرصيد المتبقي: <span id="printRemaining">0.00</span></strong></p>
     </div>
-    <div style="text-align: center; margin-top: 20px;">
-        <p>*** شكراً لتعاملكم معنا ***</p>
-    </div>
 </div>
 
 <script type="module">
-    // --- 1. إعداد المتغيرات والدوال محلياً أولاً لضمان عمل الواجهة دائماً ---
+    // 1. استيراد فايربيس
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAsd2uRGxo9Jder6hv9B6Gx901csGOBYS0",
+      authDomain: "cashsys-72d70.firebaseapp.com",
+      projectId: "cashsys-72d70",
+      storageBucket: "cashsys-72d70.firebasestorage.app",
+      messagingSenderId: "266887277869",
+      appId: "1:266887277869:web:57c8e6c92c27333cc1f7a4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const invoicesCollection = collection(db, 'invoices');
+
+    // 2. متغيرات وعناصر الواجهة
     let cart = [];
     let currentMerchantDebt = 0;
 
-    const merchantSelect = document.getElementById('merchantSelect');
     const cartBody = document.getElementById('cartBody');
     const previousDebtDisplay = document.getElementById('previousDebtDisplay');
     const cartTotalDisplay = document.getElementById('cartTotalDisplay');
     const grandTotalDisplay = document.getElementById('grandTotalDisplay');
     const paidInput = document.getElementById('paidInput');
     const remainingDisplay = document.getElementById('remainingDisplay');
+    const merchantSelect = document.getElementById('merchantSelect');
 
-    window.addToCart = function(name, price) {
-        const existing = cart.find(item => item.name === name);
-        if (existing) existing.quantity += 1;
-        else cart.push({ name, price, quantity: 1 });
-        renderCart();
-        updateCalculations();
-    };
-
-    window.removeFromCart = function(index) {
-        cart.splice(index, 1);
-        renderCart();
-        updateCalculations();
-    };
-
-    window.updateQty = function(index, qty) {
-        cart[index].quantity = parseInt(qty);
-        renderCart();
-        updateCalculations();
-    };
-
+    // 3. دوال العمليات (بدون الحاجة لـ onclick في HTML)
     function renderCart() {
         cartBody.innerHTML = '';
         cart.forEach((item, index) => {
@@ -272,9 +156,9 @@
                 <tr>
                     <td>${item.name}</td>
                     <td>${item.price}₪</td>
-                    <td><input type="number" value="${item.quantity}" min="1" onchange="updateQty(${index}, this.value)"></td>
+                    <td><input type="number" class="qty-input" data-index="${index}" value="${item.quantity}" min="1"></td>
                     <td>${total.toFixed(2)}₪</td>
-                    <td><button onclick="removeFromCart(${index})" style="background:var(--danger); color:white; border:none; padding:5px 10px; cursor:pointer;">حذف</button></td>
+                    <td><button class="delete-btn" data-index="${index}" style="background:var(--danger); color:white; border:none; padding:5px 10px; cursor:pointer;">حذف</button></td>
                 </tr>
             `;
         });
@@ -292,94 +176,82 @@
         remainingDisplay.innerText = newRemaining.toFixed(2);
     }
 
+    // 4. ربط الأزرار والأحداث باستخدام Event Listeners
+    // أزرار المنتجات
+    document.querySelectorAll('.product-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const name = e.target.getAttribute('data-name');
+            const price = parseFloat(e.target.getAttribute('data-price'));
+            const existing = cart.find(item => item.name === name);
+            if (existing) existing.quantity += 1;
+            else cart.push({ name, price, quantity: 1 });
+            renderCart();
+            updateCalculations();
+        });
+    });
+
+    // أحداث الحذف وتعديل الكمية داخل السلة
+    cartBody.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const index = e.target.getAttribute('data-index');
+            cart.splice(index, 1);
+            renderCart();
+            updateCalculations();
+        }
+    });
+
+    cartBody.addEventListener('input', (e) => {
+        if (e.target.classList.contains('qty-input')) {
+            const index = e.target.getAttribute('data-index');
+            cart[index].quantity = parseInt(e.target.value) || 1;
+            renderCart();
+            updateCalculations();
+        }
+    });
+
     paidInput.addEventListener('input', updateCalculations);
 
-    // --- 2. الاتصال بقاعدة بيانات Firebase (باستخدام روابط CDN الصحيحة لبيئة الويب) ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // إعدادات مشروعك الفعلي المضافة
-    const firebaseConfig = {
-      apiKey: "AIzaSyAsd2uRGxo9Jder6hv9B6Gx901csGOBYS0",
-      authDomain: "cashsys-72d70.firebaseapp.com",
-      projectId: "cashsys-72d70",
-      storageBucket: "cashsys-72d70.firebasestorage.app",
-      messagingSenderId: "266887277869",
-      appId: "1:266887277869:web:57c8e6c92c27333cc1f7a4"
-    };
-
-    let db;
-    let invoicesCollection;
-
-    try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        invoicesCollection = collection(db, 'invoices');
-        console.log("تم الاتصال بـ Firebase بنجاح!");
-    } catch (error) {
-        console.error("خطأ في تهيئة Firebase:", error);
-        alert("فشل الاتصال بقاعدة البيانات. تأكد من إعداداتك أو من الاتصال بالإنترنت.");
-    }
-
-    // جلب الرصيد السابق بمجرد اختيار التاجر
+    // جلب ديون التاجر
     merchantSelect.addEventListener('change', async (e) => {
         const merchantName = e.target.value;
-        if (!merchantName) {
-            currentMerchantDebt = 0;
+        if (!merchantName) { currentMerchantDebt = 0; updateCalculations(); return; }
+        
+        previousDebtDisplay.innerText = "جاري الحساب...";
+        try {
+            const q = query(invoicesCollection, where("merchant", "==", merchantName));
+            const querySnapshot = await getDocs(q);
+            let totalPurchases = 0, totalPaid = 0;
+            querySnapshot.forEach((doc) => {
+                totalPurchases += doc.data().cartTotal || 0;
+                totalPaid += doc.data().paidAmount || 0;
+            });
+            currentMerchantDebt = totalPurchases - totalPaid;
             updateCalculations();
-            return;
-        }
-
-        if(db) {
-            try {
-                // نعرض رسالة تحميل للرصيد
-                previousDebtDisplay.innerText = "جاري الحساب...";
-                const q = query(invoicesCollection, where("merchant", "==", merchantName));
-                const querySnapshot = await getDocs(q);
-                
-                let totalPurchases = 0, totalPaid = 0;
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    totalPurchases += data.cartTotal || 0;
-                    totalPaid += data.paidAmount || 0;
-                });
-                
-                currentMerchantDebt = totalPurchases - totalPaid;
-                updateCalculations();
-            } catch (error) {
-                console.error("خطأ في جلب بيانات التاجر: ", error);
-                previousDebtDisplay.innerText = "خطأ بالاتصال";
-            }
+        } catch (error) {
+            console.error("خطأ:", error);
+            previousDebtDisplay.innerText = "خطأ بالاتصال";
         }
     });
 
     // حفظ وطباعة الفاتورة
     document.getElementById('savePrintBtn').addEventListener('click', async () => {
         const merchantName = merchantSelect.value;
+        if (!merchantName) return alert("الرجاء اختيار تاجر.");
+        if (cart.length === 0) return alert("الفاتورة فارغة.");
+
         const paidAmount = parseFloat(paidInput.value) || 0;
         const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const grandTotal = cartTotal + currentMerchantDebt;
         const newRemaining = grandTotal - paidAmount;
 
-        if (!merchantName) { alert("الرجاء اختيار تاجر."); return; }
-        if (cart.length === 0) { alert("الفاتورة فارغة."); return; }
-        if (!db) { alert("قاعدة البيانات غير متصلة."); return; }
-
         try {
-            // حفظ الفاتورة في فايربيس
-            const invoiceData = {
-                merchant: merchantName,
-                items: cart,
-                cartTotal: cartTotal,
-                previousDebt: currentMerchantDebt,
-                grandTotal: grandTotal,
-                paidAmount: paidAmount,
-                newRemaining: newRemaining,
-                date: Timestamp.now()
-            };
-            await addDoc(invoicesCollection, invoiceData);
+            await addDoc(invoicesCollection, {
+                merchant: merchantName, items: cart, cartTotal,
+                previousDebt: currentMerchantDebt, grandTotal,
+                paidAmount, newRemaining, date: Timestamp.now()
+            });
 
-            // تجهيز واجهة الطباعة الحرارية
+            // تجهيز الطباعة
             document.getElementById('printMerchant').innerText = merchantName;
             document.getElementById('printDate').innerText = new Date().toLocaleString('ar-EG');
             document.getElementById('printPrevDebt').innerText = currentMerchantDebt.toFixed(2);
@@ -387,87 +259,46 @@
             document.getElementById('printGrandTotal').innerText = grandTotal.toFixed(2);
             document.getElementById('printPaid').innerText = paidAmount.toFixed(2);
             document.getElementById('printRemaining').innerText = newRemaining.toFixed(2);
+            document.getElementById('printCartBody').innerHTML = cart.map(item => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
 
-            let printCartHtml = '';
-            cart.forEach(item => {
-                printCartHtml += `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${(item.price * item.quantity).toFixed(2)}</td></tr>`;
-            });
-            document.getElementById('printCartBody').innerHTML = printCartHtml;
-
-            // تنفيذ الطباعة
             window.print();
-
-            // تصفير الفاتورة وإعادة تحميل دين التاجر الجديد
-            cart = [];
-            renderCart();
-            paidInput.value = '';
-            
-            // تحديث الرصيد مباشرة
+            cart = []; renderCart(); paidInput.value = '';
             merchantSelect.dispatchEvent(new Event('change'));
-            alert("تم حفظ الفاتورة بنجاح!");
-            
+            alert("تم حفظ الفاتورة!");
         } catch (error) {
-            console.error("خطأ في الحفظ: ", error);
-            alert("حدث خطأ أثناء حفظ الفاتورة.");
+            alert("فشل الحفظ: تأكد من تعديل قواعد الحماية (Rules) في فايربيس أولاً.");
         }
     });
 
-    // توليد تقرير المبيعات
+    // تقرير المبيعات
     document.getElementById('generateReportBtn').addEventListener('click', async () => {
         const startVal = document.getElementById('startDate').value;
         const endVal = document.getElementById('endDate').value;
-        const reportTableBody = document.getElementById('reportTableBody');
-
-        if (!startVal || !endVal) { alert("حدد التواريخ أولاً."); return; }
-        if (!db) return;
+        if (!startVal || !endVal) return alert("حدد التواريخ.");
 
         const start = Timestamp.fromDate(new Date(startVal + "T00:00:00"));
         const end = Timestamp.fromDate(new Date(endVal + "T23:59:59"));
+        const reportBody = document.getElementById('reportTableBody');
+        reportBody.innerHTML = '<tr><td colspan="5">جاري التحميل...</td></tr>';
 
         try {
-            reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">جاري التحميل...</td></tr>';
-            
-            // لتبسيط التقرير وعدم الحاجة لفهارس (Indexes) مركبة في فايربيس، نجلب الكل ضمن التاريخ ونفلتر
             const q = query(invoicesCollection, orderBy("date", "asc"));
             const snapshot = await getDocs(q);
-            
-            reportTableBody.innerHTML = '';
+            reportBody.innerHTML = '';
             let totalSales = 0, totalCollections = 0;
 
             snapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.date >= start && data.date <= end) {
-                    const dateStr = data.date.toDate().toLocaleDateString('ar-EG');
-                    totalSales += data.cartTotal;
-                    totalCollections += data.paidAmount;
-
-                    reportTableBody.innerHTML += `
-                        <tr>
-                            <td>${dateStr}</td>
-                            <td>${data.merchant}</td>
-                            <td>${data.cartTotal.toFixed(2)}</td>
-                            <td>${data.paidAmount.toFixed(2)}</td>
-                            <td>${data.newRemaining.toFixed(2)}</td>
-                        </tr>
-                    `;
+                    totalSales += data.cartTotal; totalCollections += data.paidAmount;
+                    reportBody.innerHTML += `<tr><td>${data.date.toDate().toLocaleDateString('ar-EG')}</td><td>${data.merchant}</td><td>${data.cartTotal.toFixed(2)}</td><td>${data.paidAmount.toFixed(2)}</td><td>${data.newRemaining.toFixed(2)}</td></tr>`;
                 }
             });
-
-            reportTableBody.innerHTML += `
-                <tr style="background:#ecf0f1; font-weight:bold;">
-                    <td colspan="2">الإجمالي للفترة المحددة</td>
-                    <td>${totalSales.toFixed(2)}</td>
-                    <td>${totalCollections.toFixed(2)}</td>
-                    <td>-</td>
-                </tr>
-            `;
+            reportBody.innerHTML += `<tr style="background:#ecf0f1; font-weight:bold;"><td colspan="2">الإجمالي</td><td>${totalSales.toFixed(2)}</td><td>${totalCollections.toFixed(2)}</td><td>-</td></tr>`;
         } catch (error) {
-            console.error("خطأ في التقرير: ", error);
-            alert("حدث خطأ. تأكد من إنشاء الفهرس (Index) في Firebase إذا طلب منك الكونسول ذلك.");
-            reportTableBody.innerHTML = '';
+            reportBody.innerHTML = '<tr><td colspan="5">خطأ في جلب التقرير</td></tr>';
         }
     });
 </script>
-
 </body>
 </html>
