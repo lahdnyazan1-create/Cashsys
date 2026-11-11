@@ -13,8 +13,7 @@
         .header { background: #1a237e; color: white; padding: 15px; text-align: center; }
         .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
         .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        /* تنسيق الحقول بناءً على صورتك */
+
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         input[type="text"], input[type="number"], select, input[type="date"] {
@@ -22,12 +21,14 @@
         }
         .row { display: flex; gap: 15px; }
         .row .form-group { flex: 1; }
-        
+
         .btn-add { background: var(--accent); color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
         .btn-save { background: var(--success); color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 15px; }
-        
+        .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .debt-box { background: #fff0f0; color: var(--danger); padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px; border: 1px solid #ffdcdc; }
-        
+        .debt-box.error { background: #fff8e1; color: #b26a00; border-color: #ffe0a3; font-size: 14px; line-height: 1.6; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
         th { background: #f8f9fa; color: #333; }
@@ -52,17 +53,14 @@
 </div>
 
 <div class="container">
-    <!-- قسم إضافة منتج (يطابق صورتك) -->
+    <!-- قسم إضافة منتج -->
     <div class="panel">
         <h3 style="text-align: center; margin-top: 0;">إضافة منتج للفاتورة</h3>
-        
+
         <div class="form-group">
-            <label>اختر التاجر:</label>
+            <label for="merchantSelect">اختر التاجر:</label>
             <select id="merchantSelect">
                 <option value="">-- اختر التاجر --</option>
-                <option value="التاجر 1 (أحمد)">التاجر 1 (أحمد)</option>
-                <option value="التاجر 2 (محمد)">التاجر 2 (محمد)</option>
-                <option value="التاجر 3 (محمود)">التاجر 3 (محمود)</option>
             </select>
         </div>
 
@@ -71,29 +69,29 @@
         </div>
 
         <div class="form-group">
-            <label>اسم الصنف:</label>
+            <label for="itemName">اسم الصنف:</label>
             <input type="text" id="itemName" placeholder="مثال: نين">
         </div>
 
         <div class="row">
             <div class="form-group">
-                <label>السعر (شيكل):</label>
-                <input type="number" id="itemPrice" placeholder="5" min="0" step="0.01">
+                <label for="itemPrice">السعر (شيكل):</label>
+                <input type="number" id="itemPrice" placeholder="5" min="0" step="0.01" inputmode="decimal">
             </div>
             <div class="form-group">
-                <label>الكمية:</label>
-                <input type="number" id="itemQty" value="1" min="1">
+                <label for="itemQty">الكمية:</label>
+                <input type="number" id="itemQty" value="1" min="1" inputmode="numeric">
             </div>
         </div>
 
         <button class="btn-add" id="addToListBtn">إضافة للقائمة +</button>
     </div>
 
-    <!-- قسم تفاصيل الفاتورة (يطابق صورتك) -->
+    <!-- قسم تفاصيل الفاتورة -->
     <div class="panel">
         <h3 style="text-align: center; margin-top: 0;">تفاصيل الفاتورة الحالية</h3>
         <p style="text-align: center; font-weight: bold; background: #eee; padding: 5px; border-radius: 4px;" id="currentMerchantName">لم يتم اختيار تاجر</p>
-        
+
         <table>
             <thead>
                 <tr>
@@ -118,12 +116,12 @@
                 <span>المبلغ الكلي المطلوب (مع الديون):</span>
                 <span id="grandTotalDisplay">0.00 ₪</span>
             </div>
-            
+
             <div class="form-group" style="margin-top: 15px;">
-                <label>الدفعة المحصلة الآن (شيكل):</label>
-                <input type="number" id="paidInput" placeholder="أدخل المبلغ الذي سيدفعه التاجر الآن" min="0">
+                <label for="paidInput">الدفعة المحصلة الآن (شيكل):</label>
+                <input type="number" id="paidInput" placeholder="أدخل المبلغ الذي سيدفعه التاجر الآن" min="0" step="0.01" inputmode="decimal">
             </div>
-            
+
             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 18px; color: var(--success);">
                 <span>الرصيد المتبقي عليه:</span>
                 <span id="remainingDisplay">0.00 ₪</span>
@@ -134,7 +132,7 @@
     </div>
 </div>
 
-<!-- منطقة الطباعة الحرارية (نفس الإعدادات السابقة) -->
+<!-- منطقة الطباعة الحرارية -->
 <div id="printArea">
     <div class="print-header">
         <h2 style="margin:0;">مؤسسة التجارة</h2>
@@ -157,61 +155,84 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeFirestore, collection, addDoc, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // إعدادات فايربيس الخاصة بك
+    // إعدادات فايربيس (مفاتيح الويب عامة بطبيعتها، والحماية تتم عبر قواعد Firestore)
     const firebaseConfig = {
-      apiKey: "AIzaSyAsd2uRGxo9Jder6hv9B6Gx901csGOBYS0",
-      authDomain: "cashsys-72d70.firebaseapp.com",
-      projectId: "cashsys-72d70",
-      storageBucket: "cashsys-72d70.firebasestorage.app",
-      messagingSenderId: "266887277869",
-      appId: "1:266887277869:web:57c8e6c92c27333cc1f7a4"
+        apiKey: "AIzaSyAsd2uRGxo9Jder6hv9B6Gx901csGOBYS0",
+        authDomain: "cashsys-72d70.firebaseapp.com",
+        projectId: "cashsys-72d70",
+        storageBucket: "cashsys-72d70.firebasestorage.app",
+        messagingSenderId: "266887277869",
+        appId: "1:266887277869:web:57c8e6c92c27333cc1f7a4"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // Long Polling: يحل مشكلة "Could not reach Cloud Firestore backend" على الشبكات والمتصفحات التي تحجب WebChannel
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
     const invoicesCollection = collection(db, 'invoices');
+
+    const MERCHANTS = ["التاجر 1 (أحمد)", "التاجر 2 (محمد)", "التاجر 3 (محمود)"];
+    const SAVE_TIMEOUT_MS = 15000;
 
     let cart = [];
     let currentMerchantDebt = 0;
+    let debtReady = false;
+    let debtRequestId = 0;
 
-    // جلب عناصر الواجهة
-    const merchantSelect = document.getElementById('merchantSelect');
-    const currentMerchantName = document.getElementById('currentMerchantName');
-    const debtBox = document.getElementById('debtBox');
-    const previousDebtDisplay = document.getElementById('previousDebtDisplay');
-    const itemNameInput = document.getElementById('itemName');
-    const itemPriceInput = document.getElementById('itemPrice');
-    const itemQtyInput = document.getElementById('itemQty');
-    const addToListBtn = document.getElementById('addToListBtn');
-    const cartBody = document.getElementById('cartBody');
-    
-    const cartTotalDisplay = document.getElementById('cartTotalDisplay');
-    const grandTotalDisplay = document.getElementById('grandTotalDisplay');
-    const paidInput = document.getElementById('paidInput');
-    const remainingDisplay = document.getElementById('remainingDisplay');
+    // عناصر الواجهة
+    const $ = (id) => document.getElementById(id);
+    const merchantSelect = $('merchantSelect');
+    const currentMerchantName = $('currentMerchantName');
+    const debtBox = $('debtBox');
+    const previousDebtDisplay = $('previousDebtDisplay');
+    const itemNameInput = $('itemName');
+    const itemPriceInput = $('itemPrice');
+    const itemQtyInput = $('itemQty');
+    const addToListBtn = $('addToListBtn');
+    const cartBody = $('cartBody');
+    const cartTotalDisplay = $('cartTotalDisplay');
+    const grandTotalDisplay = $('grandTotalDisplay');
+    const paidInput = $('paidInput');
+    const remainingDisplay = $('remainingDisplay');
+    const savePrintBtn = $('savePrintBtn');
 
-    // 1. دالة الإضافة للقائمة (المربوطة بالحقول النصية)
+    // أدوات مساعدة
+    const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const getCartTotal = () => round2(cart.reduce((sum, item) => sum + item.price * item.quantity, 0));
+    const withTimeout = (promise, ms) => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error('timeout'), { code: 'timeout' })), ms))
+    ]);
+
+    // تعبئة قائمة التجار
+    MERCHANTS.forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        merchantSelect.appendChild(opt);
+    });
+
+    // 1. الإضافة للقائمة
     addToListBtn.addEventListener('click', () => {
         const name = itemNameInput.value.trim();
         const price = parseFloat(itemPriceInput.value);
-        const qty = parseInt(itemQtyInput.value) || 1;
+        const qty = parseInt(itemQtyInput.value, 10) || 1;
 
-        if (!name || isNaN(price) || price <= 0) {
-            alert("يرجى إدخال اسم الصنف والسعر بشكل صحيح.");
+        if (!name || isNaN(price) || price <= 0 || qty < 1) {
+            alert("يرجى إدخال اسم الصنف والسعر والكمية بشكل صحيح.");
             return;
         }
 
-        // إضافة للفاتورة
-        const existingItem = cart.find(item => item.name === name);
+        // دمج الصنف فقط إذا تطابق الاسم والسعر معاً
+        const existingItem = cart.find((item) => item.name === name && item.price === price);
         if (existingItem) {
             existingItem.quantity += qty;
         } else {
             cart.push({ name, price, quantity: qty });
         }
 
-        // تفريغ الحقول لتسريع الإدخال التالي
         itemNameInput.value = '';
         itemPriceInput.value = '';
         itemQtyInput.value = '1';
@@ -221,44 +242,37 @@
         updateCalculations();
     });
 
-    // 2. تحديث وعرض الجدول
+    // 2. عرض الجدول
     function renderCart() {
         if (cart.length === 0) {
             cartBody.innerHTML = '<tr><td colspan="5" class="empty-msg">لا يوجد منتجات في الفاتورة</td></tr>';
             return;
         }
-        
-        cartBody.innerHTML = '';
-        cart.forEach((item, index) => {
-            const total = item.price * item.quantity;
-            cartBody.innerHTML += `
-                <tr>
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.price}₪</td>
-                    <td>${total.toFixed(2)}₪</td>
-                    <td><button class="delete-btn" data-index="${index}">حذف</button></td>
-                </tr>
-            `;
-        });
+        cartBody.innerHTML = cart.map((item, index) => `
+            <tr>
+                <td>${esc(item.name)}</td>
+                <td>${item.quantity}</td>
+                <td>${item.price}₪</td>
+                <td>${(item.price * item.quantity).toFixed(2)}₪</td>
+                <td><button class="delete-btn" data-index="${index}">حذف</button></td>
+            </tr>
+        `).join('');
     }
 
-    // حذف عنصر من الفاتورة
     cartBody.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-btn')) {
-            const index = e.target.getAttribute('data-index');
-            cart.splice(index, 1);
-            renderCart();
-            updateCalculations();
-        }
+        const btn = e.target.closest('.delete-btn');
+        if (!btn) return;
+        cart.splice(parseInt(btn.dataset.index, 10), 1);
+        renderCart();
+        updateCalculations();
     });
 
     // 3. الحسابات
     function updateCalculations() {
-        const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const grandTotal = cartTotal + currentMerchantDebt;
+        const cartTotal = getCartTotal();
+        const grandTotal = round2(cartTotal + currentMerchantDebt);
         const paidAmount = parseFloat(paidInput.value) || 0;
-        const newRemaining = grandTotal - paidAmount;
+        const newRemaining = round2(grandTotal - paidAmount);
 
         cartTotalDisplay.innerText = cartTotal.toFixed(2) + ' ₪';
         grandTotalDisplay.innerText = grandTotal.toFixed(2) + ' ₪';
@@ -267,85 +281,116 @@
 
     paidInput.addEventListener('input', updateCalculations);
 
-    // 4. اختيار التاجر وجلب ديونه
-    merchantSelect.addEventListener('change', async (e) => {
+    // 4. جلب ديون التاجر
+    async function loadDebt(merchantName) {
+        const requestId = ++debtRequestId;
+        debtReady = false;
+        debtBox.classList.remove('error');
+        previousDebtDisplay.innerText = "جاري الحساب...";
+
+        try {
+            const q = query(invoicesCollection, where("merchant", "==", merchantName));
+            const snapshot = await getDocs(q);
+
+            let totalPurchases = 0, totalPaid = 0;
+            snapshot.forEach((d) => {
+                totalPurchases += d.data().cartTotal || 0;
+                totalPaid += d.data().paidAmount || 0;
+            });
+
+            if (requestId !== debtRequestId) return; // تم اختيار تاجر آخر أثناء الانتظار
+            currentMerchantDebt = round2(totalPurchases - totalPaid);
+            debtReady = true;
+            debtBox.innerHTML = `رصيد الديون السابق: <span id="previousDebtDisplay">${currentMerchantDebt.toFixed(2)}</span> ₪`;
+        } catch (error) {
+            if (requestId !== debtRequestId) return;
+            console.error(error);
+            currentMerchantDebt = 0;
+            debtBox.classList.add('error');
+            debtBox.innerHTML = `تعذر تحميل رصيد التاجر (${esc(error.code || error.message)}).<br>تحقق من الاتصال وقواعد Firestore ثم اختر التاجر مرة أخرى.`;
+        }
+        updateCalculations();
+    }
+
+    merchantSelect.addEventListener('change', (e) => {
         const merchantName = e.target.value;
         if (!merchantName) {
+            debtRequestId++;
             currentMerchantName.innerText = "لم يتم اختيار تاجر";
             debtBox.style.display = 'none';
             currentMerchantDebt = 0;
+            debtReady = false;
             updateCalculations();
             return;
         }
-        
         currentMerchantName.innerText = merchantName;
         debtBox.style.display = 'block';
-        previousDebtDisplay.innerText = "جاري الحساب...";
-        
-        try {
-            const q = query(invoicesCollection, where("merchant", "==", merchantName));
-            const querySnapshot = await getDocs(q);
-            let totalPurchases = 0, totalPaid = 0;
-            querySnapshot.forEach((doc) => {
-                totalPurchases += doc.data().cartTotal || 0;
-                totalPaid += doc.data().paidAmount || 0;
-            });
-            currentMerchantDebt = totalPurchases - totalPaid;
-            previousDebtDisplay.innerText = currentMerchantDebt.toFixed(2);
-            updateCalculations();
-        } catch (error) {
-            previousDebtDisplay.innerText = "خطأ بالاتصال";
-            console.error(error);
-        }
+        loadDebt(merchantName);
     });
 
     // 5. حفظ وطباعة الفاتورة
-    document.getElementById('savePrintBtn').addEventListener('click', async () => {
+    savePrintBtn.addEventListener('click', async () => {
         const merchantName = merchantSelect.value;
         if (!merchantName) return alert("الرجاء اختيار تاجر أولاً.");
         if (cart.length === 0) return alert("الفاتورة فارغة، يرجى إضافة منتجات.");
+        if (!debtReady) return alert("لم يتم تحميل رصيد التاجر بعد. انتظر قليلاً أو أعد اختيار التاجر.");
 
         const paidAmount = parseFloat(paidInput.value) || 0;
-        const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const grandTotal = cartTotal + currentMerchantDebt;
-        const newRemaining = grandTotal - paidAmount;
+        if (paidAmount < 0) return alert("مبلغ الدفعة غير صحيح.");
+
+        const items = cart.map((item) => ({ ...item }));
+        const cartTotal = getCartTotal();
+        const previousDebt = currentMerchantDebt;
+        const grandTotal = round2(cartTotal + previousDebt);
+        const newRemaining = round2(grandTotal - paidAmount);
+
+        savePrintBtn.disabled = true;
+        savePrintBtn.textContent = "جاري الحفظ...";
 
         try {
-            // حفظ الفاتورة في فايربيس (هنا سيتم إنشاء قاعدة البيانات وجدول Invoices لأول مرة)
-            await addDoc(invoicesCollection, {
-                merchant: merchantName, 
-                items: cart, 
+            await withTimeout(addDoc(invoicesCollection, {
+                merchant: merchantName,
+                items,
                 cartTotal,
-                previousDebt: currentMerchantDebt, 
+                previousDebt,
                 grandTotal,
-                paidAmount, 
-                newRemaining, 
+                paidAmount,
+                newRemaining,
                 date: Timestamp.now()
-            });
+            }), SAVE_TIMEOUT_MS);
 
             // تعبئة واجهة الطباعة
-            document.getElementById('printMerchant').innerText = merchantName;
-            document.getElementById('printDate').innerText = new Date().toLocaleString('ar-EG');
-            document.getElementById('printPrevDebt').innerText = currentMerchantDebt.toFixed(2);
-            document.getElementById('printCartTotal').innerText = cartTotal.toFixed(2);
-            document.getElementById('printGrandTotal').innerText = grandTotal.toFixed(2);
-            document.getElementById('printPaid').innerText = paidAmount.toFixed(2);
-            document.getElementById('printRemaining').innerText = newRemaining.toFixed(2);
-            document.getElementById('printCartBody').innerHTML = cart.map(item => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
+            $('printMerchant').innerText = merchantName;
+            $('printDate').innerText = new Date().toLocaleString('ar-EG');
+            $('printPrevDebt').innerText = previousDebt.toFixed(2);
+            $('printCartTotal').innerText = cartTotal.toFixed(2);
+            $('printGrandTotal').innerText = grandTotal.toFixed(2);
+            $('printPaid').innerText = paidAmount.toFixed(2);
+            $('printRemaining').innerText = newRemaining.toFixed(2);
+            $('printCartBody').innerHTML = items.map((item) =>
+                `<tr><td>${esc(item.name)}</td><td>${item.quantity}</td><td>${(item.price * item.quantity).toFixed(2)}</td></tr>`
+            ).join('');
 
-            // طباعة
             window.print();
 
-            // تصفير الفاتورة لبدء عملية جديدة
-            cart = []; 
-            renderCart(); 
+            // تصفير الفاتورة وتحديث الدين
+            cart = [];
             paidInput.value = '';
-            merchantSelect.dispatchEvent(new Event('change')); // تحديث الدين فوراً
+            renderCart();
+            await loadDebt(merchantName);
             alert("تم حفظ الفاتورة بنجاح!");
-            
         } catch (error) {
-            alert("حدث خطأ أثناء الحفظ. تأكد من ضبط قواعد فايربيس (Rules) كما وضحنا سابقاً.");
             console.error(error);
+            if (error.code === 'timeout') {
+                alert("لم يصل تأكيد الحفظ من السيرفر (الاتصال ضعيف أو محجوب). قد تُحفظ الفاتورة لاحقاً عند عودة الاتصال، فلا تكرر الحفظ قبل التأكد من رصيد التاجر.");
+            } else if (error.code === 'permission-denied') {
+                alert("تم رفض الحفظ: قواعد Firestore لا تسمح بالكتابة. راجع تبويب Rules في Firebase.");
+            } else {
+                alert("حدث خطأ أثناء الحفظ: " + (error.code || error.message));
+            }
+        } finally {
+            savePrintBtn.disabled = false;
+            savePrintBtn.textContent = "حفظ وطباعة الفاتورة";
         }
     });
 </script>
