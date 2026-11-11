@@ -169,7 +169,8 @@
 
     const app = initializeApp(firebaseConfig);
     // Long Polling: يحل مشكلة "Could not reach Cloud Firestore backend" على الشبكات والمتصفحات التي تحجب WebChannel
-    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
+    // قاعدة البيانات في مشروعك اسمها "default" (بدون أقواس)، وليست "(default)" التي يبحث عنها الـ SDK افتراضياً
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true }, "default");
     const invoicesCollection = collection(db, 'invoices');
 
     const MERCHANTS = ["التاجر 1 (أحمد)", "التاجر 2 (محمد)", "التاجر 3 (محمود)"];
